@@ -1,0 +1,77 @@
+# ==================== БИНАРНЫЕ И СКОМПИЛИРОВАННЫЕ ФАЙЛЫ ====================
+*.o
+*.so
+*.a
+*.dll
+*.exe
+*.lib
+BottleInsp
+*.app
+
+# ==================== МОДЕЛИ И ДАННЫЕ ====================
+*.pt
+*.pth
+*.onnx
+*.weights
+*.bin
+*.h5
+*.hdf5
+*.joblib
+*.pkl
+*.pickle
+
+# ==================== QT ====================
+*.pro.user
+*.pro.user.*
+.qmake.stash
+*.qrc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.jaml
+
+# ==================== СБОРКА ====================
+build/
+bin/
+Debug/
+Release/
+x64/
+x86/
+*.vcxproj*
+*.sln
+Makefile*
+*.mk
+compile_commands.json
+
+# ==================== ВРЕМЕННЫЕ ФАЙЛЫ ====================
+*~
+*.swp
+*.swo
+*.autosave
+*.tmp
+temp/
+
+# ==================== СИСТЕМНЫЕ ====================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==================== IDE ====================
+.idea/
+.vscode/
+*.code-workspace
+.qtcreator/
+.cache/
+.qtc_clangd/
+
+# ==================== ПАПКИ С БИБЛИОТЕКАМИ ====================
+external/OpenCV/lib/
+external/**/lib/
+external/**/bin/
+
+# ==================== ЛОГИ ====================
+*.log
+log/
+logs/
