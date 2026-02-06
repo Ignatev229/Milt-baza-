@@ -1,5 +1,5 @@
 from Inspection.lib import*
-from struct_define import TRACK_ID, DEFECT_NAME, MOLD_RESULT, InspectNonRoundShapeData, TopInspectData, CorrectinInspectData, NumberReaderData
+from struct_define import TRACK_ID, DEFECT_NAME, MOLD_RESULT, InspectNonRoundShapeData, InspectBodyRData, TopInspectData, CorrectinInspectData, NumberReaderData
 from config import RGB2Hex, AddRectangleOverlayInfos, AddContourOverlayInfos
 import config
 
@@ -623,7 +623,7 @@ def InspectMid(ImageTOP, ImageMID, ImageBOT, TopDetectionModel):
         DefectCodes.add(f"{TRACK_ID.MID.value};{DEFECT_NAME.PROCESS_ERROR.value}")
         return ImageOVL, DefectInfos, OverlayInfos, DefectCodes, MoldResult
     
-def InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, DataStr, NonRoundShapeData: List[InspectNonRoundShapeData], NumberReaderData: NumberReaderData, mlCore: MLCore, ImageBotOVL):
+def InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, DataStr, NonRoundShapeData: List[InspectNonRoundShapeData], BodyRData: List[InspectBodyRData], NumberReaderData: NumberReaderData, mlCore: MLCore, ImageBotOVL):
     if ImageBotOVL is None:
         ImageOVL = cv2.cvtColor(ImageBOT, cv2.COLOR_GRAY2BGR)
     else:
@@ -908,6 +908,26 @@ def InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, DataStr, NonRoundShape
                                     color, ZOOM_RATIO, AppConfigParam.instance.resolution[TRACK_ID.BOTTOM])
                     DefectInfos.append(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.name};Dimension {BodyRInspectParam.instance.dimensionsName[i]};{round(DimensionOut, config.FLOAT_NUMBER)};{not IsDefect}")
                     DefectInfos.append(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.name};Diff Dimension {BodyRInspectParam.instance.dimensionsName[i]};{round(DiffDimensionOut, config.FLOAT_NUMBER)};{not IsDefect}")
+                    if DimensionOut > 0:
+                        if BodyRData[i].minSize == 0 or DimensionOut < BodyRData[i].minSize:
+                            BodyRData[i].minSize = DimensionOut
+                        if BodyRData[i].maxSize == 0 or DimensionOut > BodyRData[i].maxSize:
+                            BodyRData[i].maxSize = DimensionOut
+
+                    minSize = BodyRData[i].minSize
+                    maxSize = BodyRData[i].maxSize
+                    ovalSize = round(maxSize - minSize, config.FLOAT_NUMBER) if minSize > 0 and maxSize > 0 else 0
+
+                    minDiff = round(minSize - dimensions, config.FLOAT_NUMBER)
+                    maxDiff = round(maxSize - dimensions, config.FLOAT_NUMBER)
+
+                    minIsDefect = minDiff < minTolerances * (-1) or minDiff > maxTolerances
+                    maxIsDefect = maxDiff < minTolerances * (-1) or maxDiff > maxTolerances
+
+                    DefectInfos.append(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.name};Min Size {BodyRInspectParam.instance.dimensionsName[i]};{round(minSize, config.FLOAT_NUMBER)};{not minIsDefect}")
+                    DefectInfos.append(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.name};Max Size {BodyRInspectParam.instance.dimensionsName[i]};{round(maxSize, config.FLOAT_NUMBER)};{not maxIsDefect}")
+                    DefectInfos.append(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.name};Oval {BodyRInspectParam.instance.dimensionsName[i]};{round(ovalSize, config.FLOAT_NUMBER)};{True}")
+
                     if IsDefect:
                         DefectCodes.add(f"{TRACK_ID.BOTTOM.value};{DEFECT_NAME.BODYR_DIMENSION.value}")
                         ImageOVL, OvlStringPos = DrawOvlStr(ImageOVL, OvlStringPos, OvlStringSpace, f"Dimension {BodyRInspectParam.instance.dimensionsName[i]}", color)
@@ -920,6 +940,22 @@ def InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, DataStr, NonRoundShape
                         DimensionOut <= BodyRInspectParam.instance.dimensions[i].minWarning) \
                         and MoldResult == MOLD_RESULT.PASS.value:
                         MoldResult = MOLD_RESULT.WARNING.value
+                    if minSize >= BodyRInspectParam.instance.dimensions[i].maxAlarm or \
+                        minSize <= BodyRInspectParam.instance.dimensions[i].minAlarm:
+                        MoldResult = MOLD_RESULT.ALARM.value
+                    elif (minSize >= BodyRInspectParam.instance.dimensions[i].maxWarning or \
+                        minSize <= BodyRInspectParam.instance.dimensions[i].minWarning) \
+                        and MoldResult == MOLD_RESULT.PASS.value:
+                        MoldResult = MOLD_RESULT.WARNING.value
+
+                    if maxSize >= BodyRInspectParam.instance.dimensions[i].maxAlarm or \
+                        maxSize <= BodyRInspectParam.instance.dimensions[i].minAlarm:
+                        MoldResult = MOLD_RESULT.ALARM.value
+                    elif (maxSize >= BodyRInspectParam.instance.dimensions[i].maxWarning or \
+                        maxSize <= BodyRInspectParam.instance.dimensions[i].minWarning) \
+                        and MoldResult == MOLD_RESULT.PASS.value:
+                        MoldResult = MOLD_RESULT.WARNING.value
+
             print("BodyR Dimension Inspect time: ", time.time() - t1)
         ##### End BodyR Dimension #####
 
@@ -1688,7 +1724,26 @@ def Inspect(ImageTOP, ImageMID, ImageBOT):
         nonRoundShapeData = []
         for i in range(NonRoundShapeInspectParam.instance.maxNumberDimension):
             nonRoundShapeData.append(InspectNonRoundShapeData())
-        ImageOVL, DefectInfos, OverlayInfos, DefectCodes, MoldResult = InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOT, "0$0", nonRoundShapeData)
+
+        bodyRData = []
+        for i in range(BodyRInspectParam.instance.maxNumberDimension):
+            bodyRData.append(InspectBodyRData())
+
+        numberReaderData = NumberReaderData()
+
+        ImageOVL, DefectInfos, OverlayInfos, DefectCodes, MoldResult = InspectBot(
+            ImageTOP,
+            ImageMID,
+            ImageBOT,
+            ImageBOT,
+            "0$0",
+            nonRoundShapeData,
+            bodyRData,
+            numberReaderData,
+            None,
+            None,
+        )
+
 
     return
 
