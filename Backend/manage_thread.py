@@ -67,6 +67,9 @@ class ManageThread():
             inspectOutputInfo.command = TCP_COMMAND.VALIDATION_INSPECT_DONE
         elif(input.command == TCP_COMMAND.CALIBRATION_INSPECT):
             inspectOutputInfo.command = TCP_COMMAND.CALIBRATION_INSPECT_DONE
+        elif(input.command == TCP_COMMAND.BODYR_INSPECT_START or
+             input.command == TCP_COMMAND.BODYR_INSPECT):
+            inspectOutputInfo.command = TCP_COMMAND.BODYR_INSPECT_DONE
             # if success 2 camera write to temp file
             # if defectCodes == '':
             #     # pass
@@ -181,4 +184,3 @@ class ManageThread():
     def Kill(self):
         for i in range(config.NUMBER_PROCESS):
             self.inspThread[i].Kill()
-

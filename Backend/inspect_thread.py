@@ -1,4 +1,3 @@
-
 import threading
 import time
 import cv2
@@ -29,6 +28,10 @@ class InspectThread(threading.Thread):
         self.nonRoundShapeData = []
         for i in range(NonRoundShapeInspectParam.instance.maxNumberDimension):
             self.nonRoundShapeData.append(InspectNonRoundShapeData()) # only for inspection non round shape of bottom image
+        self.bodyRData = []
+        for i in range(BodyRInspectParam.instance.maxNumberDimension):
+            self.bodyRData.append(InspectBodyRData()) # only for inspection bodyR of bottom image
+        self.isBodyRSeriesActive = False
         self.topInspectData = TopInspectData() # only for inspection knockout of top image
         self.correctionInspectData = CorrectinInspectData() # only for inspect correction
         self.numberReaderData = NumberReaderData() # for check number code in bottom 2 image
@@ -60,7 +63,8 @@ class InspectThread(threading.Thread):
                 ImageTOPOVL = None # store the flange and knockout ovl
                 ImageBOTOVL = None # stor code number ovl
                 if command == TCP_COMMAND.INSPECT or command == TCP_COMMAND.VALIDATION_INSPECT\
-                    or command == TCP_COMMAND.CALIBRATION_INSPECT:
+                    or command == TCP_COMMAND.CALIBRATION_INSPECT or \
+                    command == TCP_COMMAND.BODYR_INSPECT_START or command == TCP_COMMAND.BODYR_INSPECT:
                     if(len(data) == 4):
                         ImageBOT, ImageTOP, dataStr, command  = data # for offline
                     else:
@@ -92,16 +96,34 @@ class InspectThread(threading.Thread):
                 overlayInfos = []
                 defectCodes = []
 
-                if(command == TCP_COMMAND.INSPECT or command == TCP_COMMAND.VALIDATION_INSPECT):
+                if(command == TCP_COMMAND.INSPECT or command == TCP_COMMAND.VALIDATION_INSPECT or\
+                   command == TCP_COMMAND.BODYR_INSPECT_START or command == TCP_COMMAND.BODYR_INSPECT):
                     if self.id == 1:
                         imageOVL, defectInfo, overlayInfos, defectCodes, moldResult = InspectTop(ImageTOP, ImageMID, ImageBOT, ImageTopMask, self.topInspectData, ImageTOPOVL)
                     elif self.id == 0:
-                        imageOVL, defectInfo, overlayInfos, defectCodes, moldResult = InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, dataStr, self.nonRoundShapeData, self.numberReaderData, mlCore, ImageBOTOVL)
+                        if command == TCP_COMMAND.BODYR_INSPECT_START:
+                            for i in range(BodyRInspectParam.instance.maxNumberDimension):
+                                self.bodyRData[i].Reset()
+                            self.isBodyRSeriesActive = True
+                        elif command == TCP_COMMAND.BODYR_INSPECT:
+                            self.isBodyRSeriesActive = True
+                        else:
+                            if not self.isBodyRSeriesActive:
+                                for i in range(BodyRInspectParam.instance.maxNumberDimension):
+                                    self.bodyRData[i].Reset()
+                        imageOVL, defectInfo, overlayInfos, defectCodes, moldResult = InspectBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP, dataStr, self.nonRoundShapeData, self.bodyRData, self.numberReaderData, mlCore, ImageBOTOVL)
+                        if command != TCP_COMMAND.BODYR_INSPECT_START and command != TCP_COMMAND.BODYR_INSPECT and self.isBodyRSeriesActive:
+                            for i in range(BodyRInspectParam.instance.maxNumberDimension):
+                                self.bodyRData[i].Reset()
+                            self.isBodyRSeriesActive = False
                 
                 elif command == TCP_COMMAND.CALIBRATION_INSPECT:
                     if self.id == 1:
                         imageOVL, defectInfo, overlayInfos, defectCodes, moldResult = CalibrationTop(ImageTOP, ImageMID, ImageBOT, ImageTopMask)
                     elif self.id == 0:
+                        for i in range(BodyRInspectParam.instance.maxNumberDimension):
+                            self.bodyRData[i].Reset()
+                        self.isBodyRSeriesActive = False
                         imageOVL, defectInfo, overlayInfos, defectCodes, moldResult = CalibrationBot(ImageTOP, ImageMID, ImageBOT, ImageBOTTOP)
 
                 elif command == TCP_COMMAND.NON_ROUND_SHAPE_INSPECT or\
@@ -162,4 +184,3 @@ class InspectThread(threading.Thread):
     def Kill(self):
         self.isRun.clear()
         self.startEvent.set()
-        

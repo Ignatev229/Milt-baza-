@@ -34,7 +34,11 @@ class TCP_COMMAND(Enum):
     CORRECTION_INSPECT = 19
     CORRECTION_INSPECT_DONE = 20
 
-    TOTAL_COMMAND = 21
+    BODYR_INSPECT_START = 21
+    BODYR_INSPECT = 22
+    BODYR_INSPECT_DONE = 23
+
+    TOTAL_COMMAND = 24
 
 class DEFECT_NAME(Enum):
     PROCESS_ERROR = -1
@@ -93,6 +97,15 @@ class InspectNonRoundShapeData():
         self.shortSize = 0
         self.longSize = 0
         self.diagonalSize = 0
+
+class InspectBodyRData():
+    # This data for bodyR in bottom camera
+    def __init__(self) -> None:
+        self.Reset()
+
+    def Reset(self):
+        self.minSize = 0
+        self.maxSize = 0
 
 class NumberReaderData():
     # This data for non round shape in bottom camera

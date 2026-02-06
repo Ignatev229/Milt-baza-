@@ -31,7 +31,9 @@ def main():
             manageThread.Teach(packageInfo)
         elif packageInfo.command == TCP_COMMAND.INSPECT or \
             packageInfo.command == TCP_COMMAND.VALIDATION_INSPECT or\
-            packageInfo.command == TCP_COMMAND.CALIBRATION_INSPECT:
+            packageInfo.command == TCP_COMMAND.CALIBRATION_INSPECT or\
+            packageInfo.command == TCP_COMMAND.BODYR_INSPECT_START or\
+            packageInfo.command == TCP_COMMAND.BODYR_INSPECT:
             DebugLog("Main", f"{packageInfo.command}")
             manageThread.Inspect(packageInfo)
         
