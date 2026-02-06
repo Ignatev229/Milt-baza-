@@ -139,13 +139,30 @@ InspectionInfoItem ReportVM::CreateInspectionData(QList<DefectInfoItem> defectIn
             item.setDAngle(InspectionInfoChildItem(defectInfos[i].mmValue, defectInfos[i].isPass));
         }
 
-        else if(defectInfos[i].defect == BACKEND_RESULT::BODYR_DIMENSION &&
+        /*else if(defectInfos[i].defect == BACKEND_RESULT::BODYR_DIMENSION &&
                    defectInfos[i].parameter.startsWith("Dimension"))
         {
             QList<InspectionInfoChildItem> k = item.getBodyR();
             k.append(InspectionInfoChildItem(defectInfos[i].mmValue, defectInfos[i].isPass));
             item.setBodyR(k);
+        }*/
+
+        else if(defectInfos[i].defect == BACKEND_RESULT::BODYR_DIMENSION)
+        {
+            const QString &parameter = defectInfos[i].parameter;
+            const bool isBodyRReportParam = parameter == "Dimension" ||
+                                            parameter.startsWith("Dimension ") ||
+                                            parameter.startsWith("Min Size ") ||
+                                            parameter.startsWith("Max Size ") ||
+                                            parameter.startsWith("Oval ");
+            if (!isBodyRReportParam) {
+                continue;
+            }
+            QList<InspectionInfoChildItem> k = item.getBodyR();
+            k.append(InspectionInfoChildItem(defectInfos[i].mmValue, defectInfos[i].isPass));
+            item.setBodyR(k);
         }
+
 
         else if(defectInfos[i].defect == BACKEND_RESULT::PUSHUP_DIMENSION &&
                  defectInfos[i].parameter == "Pushup")
