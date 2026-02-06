@@ -81,7 +81,9 @@ bool TCPBackendClient::Send(InputBackendInfo &inputBackendInfo)
         inputBackendInfo.function == BACKEND_FUNCTION::VALIDATION_INSPECT ||
         inputBackendInfo.function == BACKEND_FUNCTION::CALIBRATION_INSPECT ||
         inputBackendInfo.function == BACKEND_FUNCTION::CORRECTION_FIRST_INSPECT ||
-        inputBackendInfo.function == BACKEND_FUNCTION::CORRECTION_INSPECT)
+        inputBackendInfo.function == BACKEND_FUNCTION::CORRECTION_INSPECT ||
+        inputBackendInfo.function == BACKEND_FUNCTION::BODYR_INSPECT_START ||
+        inputBackendInfo.function == BACKEND_FUNCTION::BODYR_INSPECT)
     {
         infoToSend.append(imageBytes);
         // add plc data // добавить данные плк
@@ -181,10 +183,10 @@ void TCPBackendClient::ReceiveMessage()
         // process image // изображение процесса
 
 
-
         if(output.function == BACKEND_FUNCTION::INSPECT_DONE ||
             output.function == BACKEND_FUNCTION::VALIDATION_INSPECT_DONE ||
-            output.function == BACKEND_FUNCTION::CALIBRATION_INSPECT_DONE)
+            output.function == BACKEND_FUNCTION::CALIBRATION_INSPECT_DONE ||
+            output.function == BACKEND_FUNCTION::BODYR_INSPECT_DONE)
         {
             for (int i = 0; i < ConfigApplication::instance()->m_nCamNum; ++i)
             {
