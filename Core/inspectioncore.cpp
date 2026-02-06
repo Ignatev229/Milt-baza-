@@ -94,7 +94,8 @@ void InspectionCore::RecipeChanged()
 void InspectionCore::receiveInspResult_TCPBackendClient_Slot(OutputBackendInfo &output)
 {
     if(output.function == BACKEND_FUNCTION::INSPECT_DONE ||
-        output.function == BACKEND_FUNCTION::VALIDATION_INSPECT_DONE)
+        output.function == BACKEND_FUNCTION::VALIDATION_INSPECT_DONE ||
+        output.function == BACKEND_FUNCTION::BODYR_INSPECT_DONE)
     {
         ConfigApplication::instance()->WriteDebugLog("[Inspection Core]", "Receive inspect result");
 
